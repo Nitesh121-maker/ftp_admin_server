@@ -15,7 +15,7 @@
     "uuid": "^9.0.1"
   },
   "scripts": {
-    "start": "nodemon src/server.js"
+    "start": "nodemon index.js"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

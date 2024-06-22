@@ -293,8 +293,10 @@ app.get('/clientdata',  (req, res,) => {
       }
     });
   });
+  // app.get('/success', (req, res) => {
+  //   res.send('Running successfully');
+  // });
 
-
-app.listen(3002, '192.168.1.12', () => {
-    console.log("Server is listening on port 3002. Ready for connections.");
+app.listen(3005, '192.168.1.5', () => {
+    console.log("Server is listening on port 3005. Ready for connections.");
 });
