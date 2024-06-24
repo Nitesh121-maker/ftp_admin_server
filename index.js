@@ -296,7 +296,9 @@ app.get('/clientdata',  (req, res,) => {
   // app.get('/success', (req, res) => {
   //   res.send('Running successfully');
   // });
-
-app.listen(3005, '192.168.1.5', () => {
+  app.get('/test', (req, res) => {
+    res.status(200).json('Welcome, your app is working well');
+  })
+app.listen(3005, '192.168.1.10', () => {
     console.log("Server is listening on port 3005. Ready for connections.");
 });
