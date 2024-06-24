@@ -24,7 +24,7 @@ app.use(session({
 
 const con = mySql.createConnection({
     user: "u930769248_ftp_server",
-    host: "mysql.tradeimex.in",
+    host: "srv919.hstgr.io",
     password: "FTP@nsctrade24",
     database: "u930769248_FTP",
 });
