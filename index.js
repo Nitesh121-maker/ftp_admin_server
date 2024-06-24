@@ -24,7 +24,7 @@ app.use(session({
 
 const con = mySql.createConnection({
     user: "root",
-    host: "localhost",
+    host: "192.168.1.10",
     password: "",
     database: "ftp",
 });
