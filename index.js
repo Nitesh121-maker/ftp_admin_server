@@ -23,10 +23,10 @@ app.use(session({
 }));
 
 const con = mySql.createConnection({
-    user: "root",
-    host: "0.0.0.0",
-    password: "",
-    database: "ftp",
+    user: "u930769248_ftp_server",
+    host: "mysql.tradeimex.in",
+    password: "FTP@nsctrade24",
+    database: "u930769248_FTP",
 });
 
 
@@ -299,6 +299,6 @@ app.get('/clientdata',  (req, res,) => {
   app.get('/test', (req, res) => {
     res.status(200).json('Welcome, your app is working well');
   })
-app.listen(3005, '192.168.1.10', () => {
+app.listen(3005, '192.168.1.8', () => {
     console.log("Server is listening on port 3005. Ready for connections.");
 });
