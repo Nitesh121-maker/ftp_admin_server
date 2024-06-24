@@ -106,7 +106,7 @@ app.post('/login', (req, res) => {
         (err, result) => {
             if (err) {
                 console.error(err);
-                res.status(500).send({ message: "Internal server error" });
+                res.status(500).send({ message: "Internal server error",err });
             } else {
                 if (result.length === 1) {
                   const user = result[0];
