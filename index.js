@@ -9,7 +9,9 @@ const LocalStrategy = require('passport-local').Strategy;
 const nodemailer = require('nodemailer');
 const { v4: uuidv4 } = require('uuid');
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'http://192.168.1.10:3002'
+}));
 app.use(express.json());
 const fs = require('fs');
 app.use(session({
