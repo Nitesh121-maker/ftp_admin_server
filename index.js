@@ -8,6 +8,8 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const nodemailer = require('nodemailer');
 const { v4: uuidv4 } = require('uuid');
+const ftp = require('basic-ftp');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -29,21 +31,27 @@ const con = mySql.createConnection({
     database: "u930769248_FTP",
 });
 
+// Ftp Connfiguration
+const ftpconfig = {
+  host: 'ftp.tradeimex.in',
+  user:'u930769248',
+  password:'Tradeimex@031218',
+}
 
 const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      const clientId = req.body.clientId;
-      const uploadPath = path.join(__dirname,'..', 'clients',  'src', 'files', clientId);
-      
-      if (!fs.existsSync(uploadPath)) {
-        fs.mkdirSync(uploadPath, { recursive: true });
-      }
-      cb(null, uploadPath);
-    },
-    filename: function (req, file, cb) {
-      cb(null, file.originalname);
-    },
-  });
+  destination: function (req, file, cb) {
+    const clientId = req.body.clientId;
+    const uploadPath = path.join(__dirname, 'server', 'src', 'files', clientId);
+
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  }
+});
   
   const upload = multer({ storage });
 
@@ -64,6 +72,7 @@ const transporter = nodemailer.createTransport({
 //   // User is authenticated, render the dashboard
 //   res.render('dashboard');
 // });
+
 
 app.post('/register', (req, res) => {
 
@@ -196,9 +205,10 @@ app.get('/clientdata',  (req, res,) => {
   });
 
   app.post('/upload', upload.single('file'), async (req, res) => {
-    const { clientId, clientName, fileType, fileMonth } = req.body;
-    const fileName = req.file.originalname;
-    const uploadMonth = new Date().toLocaleString('en-US', { month: 'long' });
+    const { clientId, clientName, clientEmail, fileType, fileMonth } = req.body;
+    const file = req.file;
+    const fileName = file.originalname;
+    const uploadMonth = new Date().toLocaleString('en-US', { month: 'long' }); // Get full month name
     const uploadYear = new Date().getFullYear();
     const uploadDate = new Date().toISOString().split('T')[0];
     const file_status = 'Sent';
@@ -215,28 +225,31 @@ app.get('/clientdata',  (req, res,) => {
         file_status VARCHAR(255) NOT NULL,
         upload_date DATE NOT NULL,
         upload_month VARCHAR(255) NOT NULL,
-        download_status VARCHAR(255),
+        download_status  VARCHAR(255)  ,
         upload_year INT NOT NULL
       )`);
   
       // Insert data into the dynamically created table
-      const insertQuery = `INSERT INTO \`${clientId}\` (name, fileType, file_month, file_name, upload_date, upload_month, file_status, download_status, upload_year) VALUES (?,?,?,?,?,?,?,?,?)`;
+      const insertQuery = `INSERT INTO \`${clientId}\` (name, fileType, file_month, file_name, upload_date, upload_month, file_status, download_status, upload_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
       await con.query(insertQuery, [clientName, fileType, fileMonth, file_name_with_month, uploadDate, uploadMonth, file_status, null, uploadYear]);
   
-      // Upload file to remote server
-      const formData = new FormData();
-      formData.append('file', fs.createReadStream(req.file.path), { filename: fileName });
+      // FTP upload logic
+      const client = new ftp.Client();
+      client.ftp.verbose = true;
   
-      const response = await axios.post('https://filefleet.tradeimex.in/ClientsFolder', formData, {
-        headers: {
-          ...formData.getHeaders(),
-        },
-      });
-  
-      console.log('File uploaded to remote server:', response.data);
-  
-      // Clean up: Delete the temporary file after uploading
-      fs.unlinkSync(req.file.path);
+      try {
+        await client.access(ftpConfig);
+        await client.ensureDir(`/public_html/filefleet/ClientsFolder/${clientId}`);
+        await client.uploadFrom(file.path, `/public_html/filefleet/ClientsFolder/${clientId}/${file.originalname}`);
+      } catch (ftpError) {
+        console.error('FTP Error:', ftpError);
+        res.status(500).json({ error: 'Failed to upload file to FTP server' });
+        return;
+      } finally {
+        client.close();
+        // Remove the file from the temporary local storage
+        fs.unlinkSync(file.path);
+      }
   
       res.status(200).json({ message: 'File uploaded successfully' });
     } catch (error) {
