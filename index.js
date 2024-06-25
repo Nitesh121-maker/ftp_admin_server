@@ -12,7 +12,7 @@ const ftp = require('basic-ftp');
 
 const app = express();
 const corsOptions = {
-  origin: 'https://ftp-cms-main.vercel.app',
+  origin: 'https://ftp-admin-server.vercel.app/',
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
 };
