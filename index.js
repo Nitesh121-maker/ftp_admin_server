@@ -11,7 +11,13 @@ const { v4: uuidv4 } = require('uuid');
 const ftp = require('basic-ftp');
 
 const app = express();
-app.use(cors());
+const corsOptions = {
+  origin: 'https://ftp-cms-main.vercel.app',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 const fs = require('fs');
 app.use(session({
