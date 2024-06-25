@@ -11,11 +11,13 @@ const { v4: uuidv4 } = require('uuid');
 const ftp = require('basic-ftp');
 
 const app = express();
+
 const corsOptions = {
-  origin: 'https://ftp-cms-main.vercel.app', // Replace with your frontend URL
+  origin: 'https://ftp-cms-main.vercel.app', 
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
+
 app.use(cors(corsOptions));
 app.use(express.json());
 const fs = require('fs');
@@ -243,7 +245,7 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     client.ftp.verbose = true;
 
     try {
-      await client.access(ftpConfig);
+      await client.access(ftpconfig);
       await client.ensureDir(`/public_html/filefleet/ClientsFolder/${clientId}`);
       await client.uploadFrom(file.path, `/public_html/filefleet/ClientsFolder/${clientId}/${file.originalname}`);
     } catch (ftpError) {
