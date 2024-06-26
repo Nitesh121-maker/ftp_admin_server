@@ -211,12 +211,12 @@ app.get('/clientdata',  (req, res,) => {
     });
   });
 
-  app.post('/upload', async (req, res) => {
+  app.post('/upload-file', async (req, res) => {
     const { clientId, clientName, fileType, fileMonth,file } = req.body;
     // const file = req.file;
   
     if (!clientId || !clientName || !fileType || !fileMonth || !file) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ message: 'Missing required fields' });
     }
   
     const fileName = file.originalname;
