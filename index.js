@@ -213,7 +213,7 @@ app.get('/clientdata',  (req, res,) => {
 
   app.post('/upload', async (req, res) => {
     const { clientId, clientName, fileType, fileMonth } = req.body;
-    const file = req.file;
+    const file = req.body;
   
     if (!clientId || !clientName || !fileType || !fileMonth || !file) {
       return res.status(400).json({ error: 'Missing required fields' });
