@@ -271,16 +271,20 @@ app.get('/clientdata',  (req, res,) => {
   });
   app.get('/getFileData/:clientId', async (req, res) => {
     const clientId = req.params.clientId;
-
-    con.query(`SELECT * FROM \`${clientId}\``, (err, result) => {
+    const getFileSql = `SELECT * FROM \`${clientId}\``;
+    con.query(getFileSql,[clientId], (err, result) => {
         if (err) {
           console.error('Error querying MySQL:', err);
           res.status(500).send({ message: 'Internal server error' });
           return;
+        }else if(result >= 0){
+          console.log(result);
+          res.status(200).send(result);
+        }else{
+          res.status(404).send({ message: 'No data found' });
         }
-        console.log(result);
-        res.send(result);
       });
+
   });
 
   // Client Update
