@@ -215,9 +215,9 @@ app.get('/clientdata',  (req, res,) => {
     const { clientId, clientName, fileType, fileMonth,file } = req.body;
     // const file = req.file;
   
-    if (!clientId || !clientName || !fileType || !fileMonth) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
+    // if (!clientId || !clientName || !fileType || !fileMonth) {
+    //   return res.status(400).json({ message: 'Missing required fields' });
+    // }
   
     const fileName = file.originalname;
     const uploadMonth = new Date().toLocaleString('en-US', { month: 'long' });
