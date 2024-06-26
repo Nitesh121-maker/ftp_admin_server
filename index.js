@@ -41,8 +41,8 @@ const con = mySql.createConnection({
 // FTP Configuration
 const ftpconfig = {
   host: 'ftp.tradeimex.in',
-  user: 'u930769248',
-  password: 'Tradeimex@031218',
+  user: 'u930769248.filefleet',
+  password: 'Filefleettradeanu@123',
 };
 
 const storage = multer.diskStorage({
@@ -211,7 +211,7 @@ app.get('/clientdata',  (req, res,) => {
     });
   });
 
-  app.post('/upload', upload.single('file'), async (req, res) => {
+  app.post('/upload', async (req, res) => {
     const { clientId, clientName, fileType, fileMonth } = req.body;
     const file = req.file;
   
@@ -245,23 +245,23 @@ app.get('/clientdata',  (req, res,) => {
       const insertQuery = `INSERT INTO \`${clientId}\` (name, fileType, file_month, file_name, upload_date, upload_month, file_status, download_status, upload_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
       await con.query(insertQuery, [clientName, fileType, fileMonth, file_name_with_month, uploadDate, uploadMonth, file_status, null, uploadYear]);
   
-      // FTP upload logic
-      const client = new ftp.Client();
-      client.ftp.verbose = true;
+      // // FTP upload logic
+      // const client = new ftp.Client();
+      // client.ftp.verbose = true;
   
-      try {
-        await client.access(ftpconfig);
-        await client.ensureDir(`/public_html/filefleet/ClientsFolder/${clientId}`);
-        await client.uploadFrom(file.path, `/public_html/filefleet/ClientsFolder/${clientId}/${file.originalname}`);
-      } catch (ftpError) {
-        console.error('FTP Error:', ftpError);
-        res.status(500).json({ error: 'Failed to upload file to FTP server' });
-        return;
-      } finally {
-        client.close();
-        // Remove the file from the temporary local storage
-        fs.unlinkSync(file.path);
-      }
+      // try {
+      //   await client.access(ftpconfig);
+      //   await client.ensureDir(`/public_html/filefleet/ClientsFolder/${clientId}`);
+      //   await client.uploadFrom(file.path, `/public_html/filefleet/ClientsFolder/${clientId}/${file.originalname}`);
+      // } catch (ftpError) {
+      //   console.error('FTP Error:', ftpError);
+      //   res.status(500).json({ error: 'Failed to upload file to FTP server' });
+      //   return;
+      // } finally {
+      //   client.close();
+      //   // Remove the file from the temporary local storage
+      //   fs.unlinkSync(file.path);
+      // }
   
       res.status(200).json({ message: 'File uploaded successfully' });
     } catch (error) {
@@ -337,6 +337,6 @@ app.get('/clientdata',  (req, res,) => {
   app.get('/test', (req, res) => {
     res.status(200).json('Welcome, your app is working well');
   })
-app.listen(3005, '192.168.1.8', () => {
+app.listen(3005, '192.168.1.22', () => {
     console.log("Server is listening on port 3005. Ready for connections.");
 });
