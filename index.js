@@ -248,22 +248,22 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
     const insertQuery = `INSERT INTO \`${clientId}\` (name, fileType, file_month, file_name, upload_date, upload_month, file_status, download_status, upload_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     await con.query(insertQuery, [clientName, fileType, fileMonth, file_name_with_month, uploadDate, uploadMonth, file_status, null, uploadYear]);
 
-    // FTP upload logic
-    const client = new ftp.Client();
-    client.ftp.verbose = true;
+  // FTP upload logic
+  const client = new ftp.Client();
+  client.ftp.verbose = true;
 
-    try {
-      await client.access(ftpconfig);
-      await client.ensureDir(`/public_html/filefleet/ClientsFolder/${clientId}`);
-      // Upload the file from memory buffer to the FTP server
-      await client.uploadFromMemory(fileName, file.buffer);
-    } catch (ftpError) {
-      console.error('FTP Error:', ftpError);
-      res.status(500).json({ error: 'Failed to upload file to FTP server' });
-      return;
-    } finally {
-      client.close();
-    }
+  try {
+    await client.access(ftpconfig);
+    await client.ensureDir(`/public_html/filefleet/ClientsFolder/${clientId}`);
+    // Upload the file from memory buffer to the FTP server
+    await client.upload(file.buffer, `${clientId}/${file.originalname}`);
+  } catch (ftpError) {
+    console.error('FTP Error:', ftpError);
+    res.status(500).json({ error: 'Failed to upload file to FTP server' });
+    return;
+  } finally {
+    client.close();
+  }
 
     res.status(200).json({ message: 'File uploaded successfully' });
   } catch (error) {
