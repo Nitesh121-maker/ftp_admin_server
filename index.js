@@ -254,7 +254,7 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
 
   try {
     await client.access(ftpconfig);
-    await client.ensureDir(`/public_html/filefleet/ClientsFolder/${clientId}`);
+    await client.ensureDir(`/${clientId}`);
     // Upload the file from memory buffer to the FTP server
     await client.upload(file.buffer, `${clientId}/${file.originalname}`);
   } catch (ftpError) {
