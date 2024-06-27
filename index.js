@@ -21,7 +21,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
-const fs = require('fs');
+// const fs = require('fs');
 app.use(session({
   secret: 'tmcKry',
   resave: false,
