@@ -9,7 +9,7 @@ const LocalStrategy = require('passport-local').Strategy;
 const nodemailer = require('nodemailer');
 const { v4: uuidv4 } = require('uuid');
 const ftp = require('basic-ftp');
-
+const { Readable } = require('stream');
 const app = express();
 
 const corsOptions = {
