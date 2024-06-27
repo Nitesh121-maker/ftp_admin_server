@@ -234,7 +234,7 @@ app.get('/clientdata',  (req, res,) => {
       const stream = new Readable();
       stream.push(file.buffer);
       stream.push(null);
-      await client.uploadFrom(stream, `${clientId}/${originalFileName}.part${chunkIndex}`);
+      await client.uploadFrom(stream, `${originalFileName}.part${chunkIndex}`);
   
       // Check if all chunks have been uploaded
       const uploadedChunks = (await client.list(`/${clientId}`)).filter(item => item.name.startsWith(`${originalFileName}.part`)).length;
