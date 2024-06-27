@@ -259,7 +259,7 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
       const stream = new Readable();
       stream.push(file.buffer);
       stream.push(null);
-      await client.uploadFrom(stream, `${clientId}/`);
+      await client.uploadFrom(stream, `${file.originalname}`);
     } catch (ftpError) {
       console.error('FTP Error:', ftpError);
       res.status(500).json({ error: 'Failed to upload file to FTP server' });
