@@ -241,11 +241,11 @@ app.get('/clientdata',  (req, res,) => {
       if (uploadedChunks == totalChunks) {
         // Combine chunks into the final file
         await client.ensureDir('/combined');
-        const combinedPath = `/${clientId}/${originalFileName}`;
+        const combinedPath = `${originalFileName}`;
         const combinedStream = new Readable();
   
         for (let i = 0; i < totalChunks; i++) {
-          const chunkStream = await client.downloadTo(Buffer.from([]), `${clientId}/${originalFileName}.part${i}`);
+          const chunkStream = await client.downloadTo(Buffer.from([]), `{originalFileName}.part${i}`);
           combinedStream.push(chunkStream);
         }
   
@@ -254,7 +254,7 @@ app.get('/clientdata',  (req, res,) => {
   
         // Clean up chunks
         for (let i = 0; i < totalChunks; i++) {
-          await client.remove(`${clientId}/${originalFileName}.part${i}`);
+          await client.remove(`${originalFileName}.part${i}`);
         }
   
         // Insert data into the dynamically created table
@@ -363,6 +363,6 @@ app.get('/clientdata',  (req, res,) => {
   app.get('/test', (req, res) => {
     res.status(200).json('Welcome, your app is working well');
   })
-app.listen(3005, '192.168.1.22', () => {
+app.listen(3005, '192.168.1.9', () => {
     console.log("Server is listening on port 3005. Ready for connections.");
 });
