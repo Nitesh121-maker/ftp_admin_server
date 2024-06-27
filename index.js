@@ -252,18 +252,21 @@ app.post('/upload-file', upload.single('file'), async (req, res) => {
   const client = new ftp.Client();
   client.ftp.verbose = true;
 
-  try {
-    await client.access(ftpconfig);
-    await client.ensureDir(`/${clientId}`);
-    // Upload the file from memory buffer to the FTP server
-    await client.uploadFrom(file.buffer, `${clientId}/${file.originalname}`);
-  } catch (ftpError) {
-    console.error('FTP Error:', ftpError);
-    res.status(500).json({ error: 'Failed to upload file to FTP server' });
-    return;
-  } finally {
-    client.close();
-  }
+    try {
+      await client.access(ftpconfig);
+      await client.ensureDir(`/${clientId}`);
+      // Upload the file from memory buffer to the FTP server
+      const stream = new Readable();
+      stream.push(file.buffer);
+      stream.push(null);
+      await client.uploadFrom(stream, `${clientId}/${file.originalname}`);
+    } catch (ftpError) {
+      console.error('FTP Error:', ftpError);
+      res.status(500).json({ error: 'Failed to upload file to FTP server' });
+      return;
+    } finally {
+      client.close();
+    }
 
     res.status(200).json({ message: 'File uploaded successfully' });
   } catch (error) {
