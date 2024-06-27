@@ -223,7 +223,7 @@ app.get('/clientdata',  (req, res,) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
   
-    const chunkDir = path.join(__dirname, 'uploads', clientId);
+    const chunkDir = path.join(__dirname, 'upload', clientId);
     const chunkPath = path.join(chunkDir, `${originalFileName}.part${chunkIndex}`);
   
     try {
@@ -376,6 +376,6 @@ app.get('/clientdata',  (req, res,) => {
   app.get('/test', (req, res) => {
     res.status(200).json('Welcome, your app is working well');
   })
-app.listen(3005, '192.168.1.22', () => {
+app.listen(3005, '192.168.1.9', () => {
     console.log("Server is listening on port 3005. Ready for connections.");
 });
