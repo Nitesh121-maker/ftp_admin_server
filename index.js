@@ -222,8 +222,12 @@ app.get('/clientdata',  (req, res,) => {
     if (!clientId || !clientName || !fileType || !fileMonth || !file || chunkIndex === undefined || totalChunks === undefined || !originalFileName) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
-  
-    const chunkDir = path.join(__dirname, 'uploads', clientId);
+    const client = new ftp.Client();
+    client.ftp.verbose = true;
+    
+    await client.access(ftpconfig);
+
+    const chunkDir = path.join(`/${clientId}`);
     const chunkPath = path.join(chunkDir, `${originalFileName}.part${chunkIndex}`);
   
     try {
