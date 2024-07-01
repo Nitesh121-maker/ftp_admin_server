@@ -255,59 +255,60 @@ app.get('/clientdata',  (req, res,) => {
       const uploadedChunks = (await executeWithRetry(client.list.bind(client), `/${clientId}`)).filter(item => item.name.startsWith(`${originalFileName}.part`)).length;
       if (uploadedChunks === totalChunks) {
         try {
-        // Combine chunks into a single file on the FTP server
-        const finalFilePath = `/${clientId}/${originalFileName}`;
+          // Combine chunks into a single file on the FTP server
+          const finalFilePath = `/${clientId}/${originalFileName}`;
+          
+          // Create a writable stream for the final file
+          const finalFileStream = await executeWithRetry(client.uploadFrom.bind(client), finalFilePath);
         
-        // Create a writable stream for the final file
-        const finalFileStream = await executeWithRetry(client.uploadFrom.bind(client), finalFilePath);
-  
-        // Append each chunk to the final file
-        for (let i = 0; i < totalChunks; i++) {
-          const chunkPath = `/${clientId}/${originalFileName}.part${i}`;
-          await executeWithRetry(client.downloadTo.bind(client), finalFileStream, chunkPath);
-        }
-        } catch (error) {
+          // Append each chunk to the final file
+          for (let i = 0; i < totalChunks; i++) {
+            const chunkPath = `/${clientId}/${originalFileName}.part${i}`;
+            await executeWithRetry(client.downloadTo.bind(client), finalFileStream, chunkPath);
+          }
+      } catch (error) {
           res.status(500).json({ error: 'Failed to Combine' });
-        }
-  
-        try {
-                  // Close the writable stream to finalize the file
-        await finalFileStream.end();
-        // Remove all chunks
-        for (let i = 0; i < totalChunks; i++) {
-          await executeWithRetry(client.remove.bind(client), `/${clientId}/${originalFileName}.part${i}`);
-        }
-        } catch (error) {
+          return; // Add this to stop the execution of the rest of the code
+      }
+      
+      try {
+          // Close the writable stream to finalize the file
+          await finalFileStream.end();
+          // Remove all chunks
+          for (let i = 0; i < totalChunks; i++) {
+            await executeWithRetry(client.remove.bind(client), `/${clientId}/${originalFileName}.part${i}`);
+          }
+      } catch (error) {
           res.status(500).json({ error: 'Failed to Remove Chunk' });
-        }
-  
-        // Insert data into the dynamically created table
-        try {
+          return; // Add this to stop the execution of the rest of the code
+      }
+      
+      try {
+          // Insert data into the dynamically created table
           const uploadMonth = new Date().toLocaleString('en-US', { month: 'long' });
           const uploadYear = new Date().getFullYear();
           const uploadDate = new Date().toISOString().split('T')[0];
           const file_status = 'Sent';
           const file_name_with_month = `${originalFileName}`;
-    
+          
           await con.query(`CREATE TABLE IF NOT EXISTS \`${clientId}\` (
-            uid SERIAL PRIMARY KEY,
-            filetype VARCHAR(255) NOT NULL,
-            name VARCHAR(255) NOT NULL,
-            file_name VARCHAR(255) NOT NULL,
-            file_month VARCHAR(255) NOT NULL,
-            file_status VARCHAR(255) NOT NULL,
-            upload_date DATE NOT NULL,
-            upload_month VARCHAR(255) NOT NULL,
-            download_status VARCHAR(255),
-            upload_year INT NOT NULL
+              uid SERIAL PRIMARY KEY,
+              filetype VARCHAR(255) NOT NULL,
+              name VARCHAR(255) NOT NULL,
+              file_name VARCHAR(255) NOT NULL,
+              file_month VARCHAR(255) NOT NULL,
+              file_status VARCHAR(255) NOT NULL,
+              upload_date DATE NOT NULL,
+              upload_month VARCHAR(255) NOT NULL,
+              download_status VARCHAR(255),
+              upload_year INT NOT NULL
           )`);
-    
-          const insertQuery = `INSERT INTO \`${clientId}\` (name, fileType, file_month, file_name, upload_date, upload_month, file_status, download_status, upload_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+          
+          const insertQuery = `INSERT INTO \`${clientId}\` (name, fileType, file_month, file_name, upload_date, upload_month, file_status, download_status, upload_year) VALUES (?,?,?,?,?,?,?,?,?)`;
           await con.query(insertQuery, [clientName, fileType, fileMonth, file_name_with_month, uploadDate, uploadMonth, file_status, null, uploadYear]);
-
-        } catch (error) {
-          res.status(200).json({ message: 'Error in Upload' });
-        }
+      } catch (error) {
+          res.status(500).json({ error: 'Failed to Insert Data' });
+      }
         res.status(200).json({ message: 'File uploaded successfully' });
       } else {
         res.status(200).json({ message: 'Chunk uploaded successfully' });
