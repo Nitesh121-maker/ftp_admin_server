@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs-extra');
 const ftp = require('basic-ftp');
-const { Readable } = require('stream');
+const { Readable,Writable } = require('stream');
 const app = express();
 
 const corsOptions = {
