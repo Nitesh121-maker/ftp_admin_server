@@ -226,33 +226,48 @@ app.get('/clientdata',  (req, res,) => {
     const client = new ftp.Client();
     client.ftp.verbose = true;
   
+    const maxRetries = 3;
+  
+    const executeWithRetry = async (fn, ...args) => {
+      let attempts = 0;
+      while (attempts < maxRetries) {
+        try {
+          return await fn(...args);
+        } catch (error) {
+          attempts++;
+          if (attempts >= maxRetries) throw error;
+          console.log(`Retrying... (${attempts}/${maxRetries})`);
+        }
+      }
+    };
+  
     try {
-      await client.access(ftpconfig);
-      await client.ensureDir(`/${clientId}`);
+      await executeWithRetry(client.access.bind(client), ftpconfig);
+      await executeWithRetry(client.ensureDir.bind(client), `/${clientId}`);
   
       // Upload the chunk directly to the FTP server
       const chunkStream = new Readable();
       chunkStream.push(file.buffer);
       chunkStream.push(null);
-      await client.uploadFrom(chunkStream, `/${clientId}/${originalFileName}.part${chunkIndex}`);
+      await executeWithRetry(client.uploadFrom.bind(client), chunkStream, `/${clientId}/${originalFileName}.part${chunkIndex}`);
   
       // Check if all chunks have been uploaded
-      const uploadedChunks = (await client.list(`/${clientId}`)).filter(item => item.name.startsWith(`${originalFileName}.part`)).length;
+      const uploadedChunks = (await executeWithRetry(client.list.bind(client), `/${clientId}`)).filter(item => item.name.startsWith(`${originalFileName}.part`)).length;
       if (uploadedChunks === totalChunks) {
-        // Create a temporary final file on the FTP server
+        // Combine chunks into a temporary final file on the FTP server
         const finalFilePath = `/${clientId}/${originalFileName}.temp`;
-        
+  
         for (let i = 0; i < totalChunks; i++) {
           const chunkPath = `/${clientId}/${originalFileName}.part${i}`;
-          await client.appendFrom(client.downloadToStream(chunkPath), finalFilePath);
+          await executeWithRetry(client.appendFrom.bind(client), chunkPath, finalFilePath);
         }
   
         // Rename the temporary final file to the original file name
-        await client.rename(finalFilePath, `/${clientId}/${originalFileName}`);
+        await executeWithRetry(client.rename.bind(client), finalFilePath, `/${clientId}/${originalFileName}`);
   
-        // Clean up chunks on the FTP server
+        // Clean up chunks
         for (let i = 0; i < totalChunks; i++) {
-          await client.remove(`/${clientId}/${originalFileName}.part${i}`);
+          await executeWithRetry(client.remove.bind(client), `/${clientId}/${originalFileName}.part${i}`);
         }
   
         // Insert data into the dynamically created table
@@ -289,6 +304,7 @@ app.get('/clientdata',  (req, res,) => {
       client.close();
     }
   });
+  
   
   // get File data
   app.get('/getFileData/:clientId', async (req, res) => {
