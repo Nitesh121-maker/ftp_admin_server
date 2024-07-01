@@ -228,21 +228,21 @@ app.get('/clientdata',  (req, res,) => {
   
     try {
       await client.access(ftpconfig);
-      await client.ensureDir(`/ClientsFolder/${clientId}`);
+      await client.ensureDir(`/${clientId}`);
   
       // Upload the chunk directly to the FTP server
       const chunkStream = new Readable();
       chunkStream.push(file.buffer);
       chunkStream.push(null);
-      await client.uploadFrom(chunkStream, `/ClientsFolder/${clientId}/${originalFileName}.part${chunkIndex}`);
+      await client.uploadFrom(chunkStream, `/${clientId}/${originalFileName}.part${chunkIndex}`);
   
       // Check if all chunks have been uploaded
-      const uploadedChunks = (await client.list(`/ClientsFolder/${clientId}`)).filter(item => item.name.startsWith(`${originalFileName}.part`)).length;
+      const uploadedChunks = (await client.list(`/${clientId}`)).filter(item => item.name.startsWith(`${originalFileName}.part`)).length;
       if (uploadedChunks == totalChunks) {
         // Combine chunks into the final file on the FTP server
         const combinedStream = new Readable();
         for (let i = 0; i < totalChunks; i++) {
-          const chunkBuffer = await client.downloadTo(Buffer.from([]), `/ClientsFolder/${clientId}/${originalFileName}.part${i}`);
+          const chunkBuffer = await client.downloadTo(Buffer.from([]), `/${clientId}/${originalFileName}.part${i}`);
           combinedStream.push(chunkBuffer);
         }
         combinedStream.push(null);
