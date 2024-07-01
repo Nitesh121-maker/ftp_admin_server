@@ -241,15 +241,14 @@ app.get('/clientdata',  (req, res,) => {
       if (uploadedChunks == totalChunks) {
         // Combine chunks into the final file on the FTP server
         const finalFilePath = `/${clientId}/${originalFileName}`;
+        const finalFileStream = new Writable();
+        finalFileStream._write = (chunk, encoding, next) => {
+          client.appendFrom(new Readable().wrap(chunk), finalFilePath).then(() => next());
+        };
+  
         for (let i = 0; i < totalChunks; i++) {
           const chunkPath = `/${clientId}/${originalFileName}.part${i}`;
-          const chunkBuffer = await client.downloadTo(Buffer.from([]), chunkPath);
-  
-          // Append chunk to the final file
-          const appendStream = new Readable();
-          appendStream.push(chunkBuffer);
-          appendStream.push(null);
-          await client.appendFrom(appendStream, finalFilePath);
+          await client.downloadTo(finalFileStream, chunkPath);
         }
   
         // Clean up chunks
@@ -291,6 +290,8 @@ app.get('/clientdata',  (req, res,) => {
       client.close();
     }
   });
+
+  // get File data
   app.get('/getFileData/:clientId', async (req, res) => {
     const clientId = req.params.clientId;
     const getFileSql = `SELECT * FROM \`${clientId}\``;
