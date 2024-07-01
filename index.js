@@ -215,63 +215,92 @@ app.get('/clientdata',  (req, res,) => {
   });
 
   // Route to handle file upload
-  app.post('/upload-file', upload.single('file'), async (req, res) => {
-    const { clientId, clientName, fileType, fileMonth } = req.body;
-    const file = req.file; // This contains the file data as a buffer
-
-    if (!clientId || !clientName || !fileType || !fileMonth || !file) {
+  app.post('/upload-file-chunk', upload.single('file'), async (req, res) => {
+    const { clientId, clientName, fileType, fileMonth, chunkIndex, totalChunks, originalFileName } = req.body;
+    const file = req.file;
+  
+    if (!clientId || !clientName || !fileType || !fileMonth || !file || chunkIndex === undefined || totalChunks === undefined || !originalFileName) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
-
-    const fileName = file.originalname;
-    const uploadMonth = new Date().toLocaleString('en-US', { month: 'long' });
-    const uploadYear = new Date().getFullYear();
-    const uploadDate = new Date().toISOString().split('T')[0];
-    const file_status = 'Sent';
-    const file_name_with_month = `${fileName}`;
-
+  
+    const chunkDir = path.join(__dirname, 'uploads', clientId);
+    const chunkPath = path.join(chunkDir, `${originalFileName}.part${chunkIndex}`);
+  
     try {
-      // Dynamically create the table if it doesn't exist (ensure you handle SQL injection vulnerabilities)
-      await con.query(`CREATE TABLE IF NOT EXISTS \`${clientId}\` (
-        uid SERIAL PRIMARY KEY,
-        filetype VARCHAR(255) NOT NULL,
-        name VARCHAR(255) NOT NULL,
-        file_name VARCHAR(255) NOT NULL,
-        file_month VARCHAR(255) NOT NULL,
-        file_status VARCHAR(255) NOT NULL,
-        upload_date DATE NOT NULL,
-        upload_month VARCHAR(255) NOT NULL,
-        download_status VARCHAR(255),
-        upload_year INT NOT NULL
-      )`);
-
-      // Insert data into the dynamically created table
-      const insertQuery = `INSERT INTO \`${clientId}\` (name, fileType, file_month, file_name, upload_date, upload_month, file_status, download_status, upload_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-      await con.query(insertQuery, [clientName, fileType, fileMonth, file_name_with_month, uploadDate, uploadMonth, file_status, null, uploadYear]);
-
-    // FTP upload logic
-    const client = new ftp.Client();
-    client.ftp.verbose = true;
-
-      try {
-        await client.access(ftpconfig);
-        await client.ensureDir(`/${clientId}`);
-        // Upload the file from memory buffer to the FTP server
-        const stream = new Readable();
-        stream.push(file.buffer);
-        stream.push(null);
-        await client.uploadFrom(stream, `${file.originalname}`);
-      } catch (ftpError) {
-        console.error('FTP Error:', ftpError);
-        res.status(500).json({ error: 'Failed to upload file to FTP server' });
-        return;
-      } finally {
-        client.close();
+      // Ensure the chunk directory exists
+      await fs.ensureDir(chunkDir);
+  
+      // Write the chunk to the designated path
+      await fs.writeFile(chunkPath, file.buffer);
+  
+      // Check if all chunks have been uploaded
+      const uploadedChunks = await fs.readdir(chunkDir);
+      if (uploadedChunks.length === parseInt(totalChunks, 10)) {
+        // Combine all chunks
+        const finalPath = path.join(chunkDir, originalFileName);
+        const writeStream = fs.createWriteStream(finalPath);
+  
+        for (let i = 0; i < totalChunks; i++) {
+          const chunk = await fs.readFile(path.join(chunkDir, `${originalFileName}.part${i}`));
+          writeStream.write(chunk);
+        }
+  
+        writeStream.end();
+        writeStream.on('finish', async () => {
+          // All chunks are combined, proceed with database and FTP upload
+          const uploadMonth = new Date().toLocaleString('en-US', { month: 'long' });
+          const uploadYear = new Date().getFullYear();
+          const uploadDate = new Date().toISOString().split('T')[0];
+          const file_status = 'Sent';
+          const file_name_with_month = `${originalFileName}`;
+  
+          try {
+            // Dynamically create the table if it doesn't exist
+            await con.query(`CREATE TABLE IF NOT EXISTS \`${clientId}\` (
+              uid SERIAL PRIMARY KEY,
+              filetype VARCHAR(255) NOT NULL,
+              name VARCHAR(255) NOT NULL,
+              file_name VARCHAR(255) NOT NULL,
+              file_month VARCHAR(255) NOT NULL,
+              file_status VARCHAR(255) NOT NULL,
+              upload_date DATE NOT NULL,
+              upload_month VARCHAR(255) NOT NULL,
+              download_status VARCHAR(255),
+              upload_year INT NOT NULL
+            )`);
+  
+            // Insert data into the dynamically created table
+            const insertQuery = `INSERT INTO \`${clientId}\` (name, fileType, file_month, file_name, upload_date, upload_month, file_status, download_status, upload_year) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            await con.query(insertQuery, [clientName, fileType, fileMonth, file_name_with_month, uploadDate, uploadMonth, file_status, null, uploadYear]);
+  
+            // FTP upload logic
+            const client = new ftp.Client();
+            client.ftp.verbose = true;
+  
+            try {
+              await client.access(ftpconfig);
+              await client.ensureDir(`/${clientId}`);
+              // Upload the file from disk to the FTP server
+              await client.uploadFrom(finalPath, `${originalFileName}`);
+            } catch (ftpError) {
+              console.error('FTP Error:', ftpError);
+              res.status(500).json({ error: 'Failed to upload file to FTP server' });
+              return;
+            } finally {
+              client.close();
+            }
+  
+            res.status(200).json({ message: 'File uploaded successfully' });
+          } catch (error) {
+            console.error('Error uploading file:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+          }
+        });
+      } else {
+        res.status(200).json({ message: 'Chunk uploaded successfully' });
       }
-
-      res.status(200).json({ message: 'File uploaded successfully' });
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error('Error handling chunk:', error);
       res.status(500).json({ error: 'Internal Server Error' });
     }
   });
