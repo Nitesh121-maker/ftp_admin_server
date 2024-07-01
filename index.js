@@ -246,11 +246,11 @@ app.get('/clientdata',  (req, res,) => {
           combinedStream.push(chunkBuffer);
         }
         combinedStream.push(null);
-        await client.uploadFrom(combinedStream, `/ClientsFolder/${clientId}/${originalFileName}`);
+        await client.uploadFrom(combinedStream, `/${clientId}/${originalFileName}`);
   
         // Clean up chunks
         for (let i = 0; i < totalChunks; i++) {
-          await client.remove(`/ClientsFolder/${clientId}/${originalFileName}.part${i}`);
+          await client.remove(`/${clientId}/${originalFileName}.part${i}`);
         }
   
         // Insert data into the dynamically created table
