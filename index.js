@@ -253,6 +253,7 @@ app.get('/clientdata',  (req, res,) => {
   
       // Check if all chunks have been uploaded
       const uploadedChunks = (await executeWithRetry(client.list.bind(client), `/${clientId}`)).filter(item => item.name.startsWith(`${originalFileName}.part`)).length;
+      
       if (uploadedChunks === totalChunks) {
         // Combine chunks into a single file on the FTP server
         const finalFilePath = `/${clientId}/${originalFileName}`;
@@ -313,20 +314,22 @@ app.get('/clientdata',  (req, res,) => {
   // get File data
   app.get('/getFileData/:clientId', async (req, res) => {
     const clientId = req.params.clientId;
-    const getFileSql = `SELECT * FROM \`${clientId}\``;
-    con.query(getFileSql,[clientId], (err, result) => {
-        if (err) {
-          console.error('Error querying MySQL:', err);
-          res.status(500).send({ message: 'Internal server error' });
-          return;
-        }else if(result >= 0){
-          console.log(result);
-          res.status(200).send(result);
-        }else{
-          res.status(404).send({ message: 'No data found' });
-        }
-      });
-
+    const getFileSql = `SELECT * FROM ??`;
+    
+    con.query(getFileSql, [clientId], (err, result) => {
+      if (err) {
+        console.error('Error querying MySQL:', err);
+        res.status(500).send({ message: 'Internal server error' });
+        return;
+      }
+      
+      if (result.length > 0) {
+        console.log(result);
+        res.status(200).send(result);
+      } else {
+        res.status(404).send({ message: 'No data found' });
+      }
+    });
   });
 
   // Client Update
