@@ -256,7 +256,7 @@ app.get('/clientdata',  (req, res,) => {
       if (uploadedChunks === totalChunks) {
         // Combine chunks into a single file on the FTP server
         const finalFilePath = `/${clientId}/${originalFileName}`;
-  
+        await client.ensureDir(finalFilePath);
         // Create a writable stream for the final file
         const finalFileStream = await executeWithRetry(client.uploadFrom.bind(client), finalFilePath);
   
