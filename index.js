@@ -238,22 +238,19 @@ app.get('/clientdata',  (req, res,) => {
   
       // Check if all chunks have been uploaded
       const uploadedChunks = (await client.list(`/${clientId}`)).filter(item => item.name.startsWith(`${originalFileName}.part`)).length;
-      if (uploadedChunks == totalChunks) {
-        // Combine chunks into the final file on the FTP server
-        const finalFilePath = `/${clientId}/${originalFileName}`;
-        const finalFileStream = new Writable({
-          write(chunk, encoding, callback) {
-            const readableChunk = new Readable().wrap(chunk);
-            client.appendFrom(readableChunk, finalFilePath).then(() => callback());
-          }
-        });
-  
+      if (uploadedChunks === totalChunks) {
+        // Create a temporary final file on the FTP server
+        const finalFilePath = `/${clientId}/${originalFileName}.temp`;
+        
         for (let i = 0; i < totalChunks; i++) {
           const chunkPath = `/${clientId}/${originalFileName}.part${i}`;
-          await client.downloadTo(finalFileStream, chunkPath);
+          await client.appendFrom(client.downloadToStream(chunkPath), finalFilePath);
         }
   
-        // Clean up chunks
+        // Rename the temporary final file to the original file name
+        await client.rename(finalFilePath, `/${clientId}/${originalFileName}`);
+  
+        // Clean up chunks on the FTP server
         for (let i = 0; i < totalChunks; i++) {
           await client.remove(`/${clientId}/${originalFileName}.part${i}`);
         }
@@ -293,7 +290,6 @@ app.get('/clientdata',  (req, res,) => {
     }
   });
   
-
   // get File data
   app.get('/getFileData/:clientId', async (req, res) => {
     const clientId = req.params.clientId;
