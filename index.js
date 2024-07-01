@@ -217,7 +217,7 @@ app.get('/clientdata',  (req, res,) => {
   // Route to handle file upload
   app.post('/upload-file-chunk', upload.single('file'), async (req, res) => {
     const { clientId, clientName, fileType, fileMonth, chunkIndex, totalChunks, originalFileName } = req.body;
-    const file = req.file; // This contains the file data as a buffer
+    const file = req.file;
   
     if (!clientId || !clientName || !fileType || !fileMonth || !file || chunkIndex === undefined || totalChunks === undefined || !originalFileName) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -240,13 +240,17 @@ app.get('/clientdata',  (req, res,) => {
       const uploadedChunks = (await client.list(`/${clientId}`)).filter(item => item.name.startsWith(`${originalFileName}.part`)).length;
       if (uploadedChunks == totalChunks) {
         // Combine chunks into the final file on the FTP server
-        const combinedStream = new Readable();
+        const finalFilePath = `/${clientId}/${originalFileName}`;
         for (let i = 0; i < totalChunks; i++) {
-          const chunkBuffer = await client.downloadTo(Buffer.from([]), `/${clientId}/${originalFileName}.part${i}`);
-          combinedStream.push(chunkBuffer);
+          const chunkPath = `/${clientId}/${originalFileName}.part${i}`;
+          const chunkBuffer = await client.downloadTo(Buffer.from([]), chunkPath);
+  
+          // Append chunk to the final file
+          const appendStream = new Readable();
+          appendStream.push(chunkBuffer);
+          appendStream.push(null);
+          await client.appendFrom(appendStream, finalFilePath);
         }
-        combinedStream.push(null);
-        await client.uploadFrom(combinedStream, `/${clientId}/${originalFileName}`);
   
         // Clean up chunks
         for (let i = 0; i < totalChunks; i++) {
