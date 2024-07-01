@@ -227,7 +227,7 @@ app.get('/clientdata',  (req, res,) => {
     
     await client.access(ftpconfig);
 
-    const chunkDir = path.join(`/${clientId}`);
+    const chunkDir = path.join(`/filefleet/ClientsFolder/${clientId}`);
     const chunkPath = path.join(chunkDir, `${originalFileName}.part${chunkIndex}`);
   
     try {
