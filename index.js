@@ -254,18 +254,22 @@ app.get('/clientdata',  (req, res,) => {
       // Check if all chunks have been uploaded
       const uploadedChunks = (await executeWithRetry(client.list.bind(client), `/${clientId}`)).filter(item => item.name.startsWith(`${originalFileName}.part`)).length;
       if (uploadedChunks === totalChunks) {
-        // Combine chunks into a temporary final file on the FTP server
-        const finalFilePath = `/${clientId}/${originalFileName}.temp`;
+        // Combine chunks into a single file on the FTP server
+        const finalFilePath = `/${clientId}/${originalFileName}`;
   
+        // Create a writable stream for the final file
+        const finalFileStream = await executeWithRetry(client.uploadFrom.bind(client), finalFilePath);
+  
+        // Append each chunk to the final file
         for (let i = 0; i < totalChunks; i++) {
           const chunkPath = `/${clientId}/${originalFileName}.part${i}`;
-          await executeWithRetry(client.appendFrom.bind(client), chunkPath, finalFilePath);
+          await executeWithRetry(client.downloadTo.bind(client), finalFileStream, chunkPath);
         }
   
-        // Rename the temporary final file to the original file name
-        await executeWithRetry(client.rename.bind(client), finalFilePath, `/${clientId}/${originalFileName}`);
+        // Close the writable stream to finalize the file
+        await finalFileStream.end();
   
-        // Clean up chunks
+        // Remove all chunks
         for (let i = 0; i < totalChunks; i++) {
           await executeWithRetry(client.remove.bind(client), `/${clientId}/${originalFileName}.part${i}`);
         }
