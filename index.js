@@ -253,7 +253,6 @@ app.get('/clientdata',  (req, res,) => {
   
       // Check if all chunks have been uploaded
       const uploadedChunks = (await executeWithRetry(client.list.bind(client), `/${clientId}`)).filter(item => item.name.startsWith(`${originalFileName}.part`)).length;
-      
       if (uploadedChunks === totalChunks) {
         // Combine chunks into a single file on the FTP server
         const finalFilePath = `/${clientId}/${originalFileName}`;
@@ -309,8 +308,6 @@ app.get('/clientdata',  (req, res,) => {
       client.close();
     }
   });
-  
-  
   // get File data
   app.get('/getFileData/:clientId', async (req, res) => {
     const clientId = req.params.clientId;
