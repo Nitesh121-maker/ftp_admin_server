@@ -241,10 +241,12 @@ app.get('/clientdata',  (req, res,) => {
       if (uploadedChunks == totalChunks) {
         // Combine chunks into the final file on the FTP server
         const finalFilePath = `/${clientId}/${originalFileName}`;
-        const finalFileStream = new Writable();
-        finalFileStream._write = (chunk, encoding, next) => {
-          client.appendFrom(new Readable().wrap(chunk), finalFilePath).then(() => next());
-        };
+        const finalFileStream = new Writable({
+          write(chunk, encoding, callback) {
+            const readableChunk = new Readable().wrap(chunk);
+            client.appendFrom(readableChunk, finalFilePath).then(() => callback());
+          }
+        });
   
         for (let i = 0; i < totalChunks; i++) {
           const chunkPath = `/${clientId}/${originalFileName}.part${i}`;
@@ -290,6 +292,7 @@ app.get('/clientdata',  (req, res,) => {
       client.close();
     }
   });
+  
 
   // get File data
   app.get('/getFileData/:clientId', async (req, res) => {
